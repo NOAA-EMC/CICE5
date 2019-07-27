@@ -1440,6 +1440,9 @@ module cice_cap_mod
     call fld_list_add(fldsToIce_num, fldsToIce, "ocn_current_merid"             , "will provide")
     call fld_list_add(fldsToIce_num, fldsToIce, "freezing_melting_potential"    , "will provide")
     call fld_list_add(fldsToIce_num, fldsToIce, "air_density_height_lowest"     , "will provide")
+! this field is not used; however something about it being the 2nd field listed as 'toice' in 
+! nems mediator requires it to be present
+    call fld_list_add(fldsToIce_num, fldsToIce, "inst_temp_height2m"            , "will provide")
 
 !--------- export fields from Sea Ice -------------
 
