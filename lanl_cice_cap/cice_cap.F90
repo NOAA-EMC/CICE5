@@ -1913,12 +1913,21 @@ module cice_cap_mod
      enddo
     enddo
 
+#ifdef CMEPS
+    call ESMF_FieldWrite(field, fileName='field_ice_internal_'//trim(stdname)//'.nc', &
+      timeslice=slice, overwrite=.true., rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+#else
     call ESMF_FieldWrite(field, fileName='field_ice_internal_'//trim(stdname)//'.nc', &
       timeslice=slice, rc=rc) 
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
+#endif
 
     call ESMF_FieldDestroy(field, noGarbage=.true., rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
