@@ -91,6 +91,15 @@ module cice_cap_mod
   logical :: grid_attach_area = .false.
   ! local helper flag for halo debugging
   logical :: HaloDebug = .false.
+
+#ifdef CMEPS
+  character(ESMF_MAXSTR) :: flds_scalar_name = ''
+  integer                :: flds_scalar_num = 0
+  integer                :: flds_scalar_index_nx = 0
+  integer                :: flds_scalar_index_ny = 0
+  integer                :: flds_scalar_index_nextsw_cday = 0
+#endif
+
   contains
   !-----------------------------------------------------------------------
   !------------------- CICE code starts here -----------------------
@@ -241,6 +250,11 @@ module cice_cap_mod
     ! Local Variables
     type(ESMF_VM)                          :: vm
     integer                                :: mpi_comm
+#ifdef CMEPS
+    character(ESMF_MAXSTR)                 :: cvalue
+    character(ESMF_MAXSTR)                 :: logmsg
+    logical                                :: isPresent, isSet
+#endif
     character(len=*),parameter  :: subname='(cice_cap:InitializeAdvertise)'
 
     rc = ESMF_SUCCESS
@@ -258,6 +272,114 @@ module cice_cap_mod
       return  ! bail out
 
     call CICE_Initialize(mpi_comm)
+
+#ifdef CMEPS
+    call NUOPC_CompAttributeGet(gcomp, name="ScalarFieldName", value=cvalue, isPresent=isPresent, isSet=isSet, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+    if (isPresent .and. isSet) then
+       flds_scalar_name = trim(cvalue)
+       call ESMF_LogWrite(trim(subname)//' flds_scalar_name = '//trim(flds_scalar_name), ESMF_LOGMSG_INFO, rc=rc)
+       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+         line=__LINE__, &
+         file=__FILE__)) &
+         return  ! bail out
+       call fld_list_add(fldsToIce_num, fldsToIce, trim(flds_scalar_name), "will provide")
+       call fld_list_add(fldsFrIce_num, fldsFrIce, trim(flds_scalar_name), "will provide")
+    else
+       call ESMF_LogWrite(trim(subname)//' Need to set attribute ScalarFieldName', ESMF_LOGMSG_INFO, rc=rc)
+       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+         line=__LINE__, &
+         file=__FILE__)) &
+         return  ! bail out
+    endif
+
+    call NUOPC_CompAttributeGet(gcomp, name="ScalarFieldCount", value=cvalue, isPresent=isPresent, isSet=isSet, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+    if (isPresent .and. isSet) then
+       read(cvalue, *) flds_scalar_num
+       write(logmsg,*) flds_scalar_num
+       call ESMF_LogWrite(trim(subname)//' flds_scalar_num = '//trim(logmsg), ESMF_LOGMSG_INFO, rc=rc)
+       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+         line=__LINE__, &
+         file=__FILE__)) &
+         return  ! bail out
+    else
+       call ESMF_LogWrite(trim(subname)//' Need to set attribute ScalarFieldCount', ESMF_LOGMSG_INFO, rc=rc)
+       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+         line=__LINE__, &
+         file=__FILE__)) &
+         return  ! bail out
+    endif
+
+    call NUOPC_CompAttributeGet(gcomp, name="ScalarFieldIdxGridNX", value=cvalue, isPresent=isPresent, isSet=isSet, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+    if (isPresent .and. isSet) then
+       read(cvalue,*) flds_scalar_index_nx
+       write(logmsg,*) flds_scalar_index_nx
+       call ESMF_LogWrite(trim(subname)//' : flds_scalar_index_nx = '//trim(logmsg), ESMF_LOGMSG_INFO, rc=rc)
+       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+         line=__LINE__, &
+         file=__FILE__)) &
+         return  ! bail out
+    else
+       call ESMF_LogWrite(trim(subname)//' Need to set attribute ScalarFieldIdxGridNX', ESMF_LOGMSG_INFO, rc=rc)
+       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+         line=__LINE__, &
+         file=__FILE__)) &
+         return  ! bail out
+    endif
+
+    call NUOPC_CompAttributeGet(gcomp, name="ScalarFieldIdxGridNY", value=cvalue, isPresent=isPresent, isSet=isSet, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+    if (isPresent .and. isSet) then
+       read(cvalue,*) flds_scalar_index_ny
+       write(logmsg,*) flds_scalar_index_ny
+       call ESMF_LogWrite(trim(subname)//' : flds_scalar_index_ny = '//trim(logmsg), ESMF_LOGMSG_INFO, rc=rc)
+       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+         line=__LINE__, &
+         file=__FILE__)) &
+         return  ! bail out
+    else
+       call ESMF_LogWrite(trim(subname)//' Need to set attribute ScalarFieldIdxGridNY', ESMF_LOGMSG_INFO, rc=rc)
+       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+         line=__LINE__, &
+         file=__FILE__)) &
+         return  ! bail out
+    endif
+
+    call NUOPC_CompAttributeGet(gcomp, name="ScalarFieldIdxNextSwCday", value=cvalue, isPresent=isPresent, isSet=isSet, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+    if (isPresent .and. isSet) then
+       read(cvalue,*) flds_scalar_index_nextsw_cday
+       write(logmsg,*) flds_scalar_index_nextsw_cday
+       call ESMF_LogWrite(trim(subname)//' : flds_scalar_index_nextsw_cday = '//trim(logmsg), ESMF_LOGMSG_INFO, rc=rc)
+       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+         line=__LINE__, &
+         file=__FILE__)) &
+         return  ! bail out
+    else
+       call ESMF_LogWrite(trim(subname)//' Need to set attribute ScalarFieldIdxNextSwCday', ESMF_LOGMSG_INFO, rc=rc)
+       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+         line=__LINE__, &
+         file=__FILE__)) &
+         return  ! bail out
+    endif
+#endif
 
     call CICE_AdvertiseFields(importState, fldsToIce_num, fldsToIce, rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
@@ -559,11 +681,28 @@ module cice_cap_mod
 !      line=__LINE__, &
 !      file=__FILE__)) &
 !      return  ! bail out
+#ifndef CMEPS
     call state_reset(ExportState, value=-99._ESMF_KIND_R8, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
+#endif
+
+#ifdef CMEPS
+    call State_SetScalar(dble(nx_global), flds_scalar_index_nx, exportState, &
+         flds_scalar_name, flds_scalar_num, rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+    call State_SetScalar(dble(ny_global), flds_scalar_index_ny, exportState, &
+         flds_scalar_name, flds_scalar_num, rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+#endif
 
     write(tmpstr,'(a,3i8)') trim(subname)//' nx_block, ny_block, nblocks = ',nx_block,ny_block,nblocks
     call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
@@ -633,10 +772,16 @@ module cice_cap_mod
     type(ESMF_State)                       :: importState, exportState
     type(ESMF_Time)                        :: currTime
     type(ESMF_TimeInterval)                :: timeStep
+#ifdef CMEPS
+    type(ESMF_Field)                       :: lfield
+#else
     type(ESMF_Field)                       :: lfield,lfield2d
+#endif
     type(ESMF_Grid)                        :: grid
+#ifndef CMEPS
     real(ESMF_KIND_R8), pointer            :: fldptr(:,:,:)
     real(ESMF_KIND_R8), pointer            :: fldptr2d(:,:)
+#endif
     type(block)                            :: this_block
     character(len=64)                      :: fldname
     integer                                :: i,j,iblk,n,i1,i2,j1,j2
@@ -817,6 +962,14 @@ module cice_cap_mod
         call ESMF_FieldGet(lfield,grid=grid,rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
+#ifdef CMEPS
+        call ESMF_FieldWrite(lfield, fileName='field_ice_import_'//trim(fldname)//'.nc', &
+          timeslice=import_slice, overwrite=.true., rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, &
+          file=__FILE__)) &
+          return  ! bail out
+#else
         ! create a copy of the 3d data in lfield but in a 2d array, lfield2d
         lfield2d = ESMF_FieldCreate(grid, ESMF_TYPEKIND_R8, indexflag=ESMF_INDEX_DELOCAL, &
           name=trim(fldname), rc=rc)
@@ -844,6 +997,7 @@ module cice_cap_mod
           line=__LINE__, &
           file=__FILE__)) &
           return  ! bail out
+#endif
       endif
     enddo
   endif  ! write_diagnostics 
@@ -1163,6 +1317,14 @@ module cice_cap_mod
         call ESMF_FieldGet(lfield,grid=grid,rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
+#ifdef CMEPS
+        call ESMF_FieldWrite(lfield, fileName='field_ice_export_'//trim(fldname)//'.nc', &
+          timeslice=export_slice, overwrite=.true., rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, &
+          file=__FILE__)) &
+          return  ! bail out
+#else
         ! create a copy of the 3d data in lfield but in a 2d array, lfield2d
         lfield2d = ESMF_FieldCreate(grid, ESMF_TYPEKIND_R8, indexflag=ESMF_INDEX_DELOCAL, &
           name=trim(fldname), rc=rc)
@@ -1190,6 +1352,7 @@ module cice_cap_mod
           line=__LINE__, &
           file=__FILE__)) &
           return  ! bail out
+#endif
       endif
     enddo
   endif  ! write_diagnostics 
@@ -1314,9 +1477,25 @@ module cice_cap_mod
           lbound(field_defs(i)%farrayPtr,1), ubound(field_defs(i)%farrayPtr,1), &
           lbound(field_defs(i)%farrayPtr,2), ubound(field_defs(i)%farrayPtr,2)
         call ESMF_LogWrite(trim(info), ESMF_LOGMSG_INFO, rc=dbrc)
-        field = ESMF_FieldCreate(grid=grid, &
-          farray=field_defs(i)%farrayPtr, indexflag=ESMF_INDEX_DELOCAL, &
-          name=field_defs(i)%shortname, rc=rc)
+
+        if (trim(field_defs(i)%shortname) == trim(flds_scalar_name)) then
+          call ESMF_LogWrite(trim(subname)//trim(tag)//" Field = "//trim(field_defs(i)%shortname)//" is connected on root pe", &
+                  ESMF_LOGMSG_INFO)
+          ! Create the scalar field
+          call SetScalarField(field, flds_scalar_name, flds_scalar_num, rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+            line=__LINE__, &
+            file=__FILE__)) &
+            return  ! bail out
+        else
+          field = ESMF_FieldCreate(grid=grid, &
+            farray=field_defs(i)%farrayPtr, indexflag=ESMF_INDEX_DELOCAL, &
+            name=field_defs(i)%shortname, rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+            line=__LINE__, &
+            file=__FILE__)) &
+            return  ! bail out
+        end if
 #else
         write(info, *) trim(subname), tag, ' Field ', trim(field_defs(i)%shortname), ':', &
           lbound(field_defs(i)%farrayPtr,1), ubound(field_defs(i)%farrayPtr,1), &
@@ -1329,25 +1508,41 @@ module cice_cap_mod
 !          totalLWidth=(/1,1/), totalUWidth=(/1,1/),&
           ungriddedLBound=(/1/), ungriddedUBound=(/max_blocks/), &
           name=field_defs(i)%shortname, rc=rc)
-#endif
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
           line=__LINE__, &
           file=__FILE__)) &
           return  ! bail out
+#endif
       else
 #ifdef CMEPS
-        field = ESMF_FieldCreate(grid, ESMF_TYPEKIND_R8, indexflag=ESMF_INDEX_DELOCAL, &
-          name=field_defs(i)%shortname, rc=rc)
+
+        if (trim(field_defs(i)%shortname) == trim(flds_scalar_name)) then
+          call ESMF_LogWrite(trim(subname)//trim(tag)//" Field = "//trim(field_defs(i)%shortname)//" is connected on root pe", &
+                  ESMF_LOGMSG_INFO)
+          ! Create the scalar field
+          call SetScalarField(field, flds_scalar_name, flds_scalar_num, rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+            line=__LINE__, &
+            file=__FILE__)) &
+            return  ! bail out
+        else
+          field = ESMF_FieldCreate(grid, ESMF_TYPEKIND_R8, indexflag=ESMF_INDEX_DELOCAL, &
+            name=field_defs(i)%shortname, rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+            line=__LINE__, &
+            file=__FILE__)) &
+            return  ! bail out
+        end if
 #else
         field = ESMF_FieldCreate(grid, ESMF_TYPEKIND_R8, indexflag=ESMF_INDEX_DELOCAL, &
 !          totalLWidth=(/1,1/), totalUWidth=(/1,1/),&
           ungriddedLBound=(/1/), ungriddedUBound=(/max_blocks/), &
           name=field_defs(i)%shortname, rc=rc)
-#endif
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
           line=__LINE__, &
           file=__FILE__)) &
           return  ! bail out
+#endif
       endif
 
       if (NUOPC_IsConnected(state, fieldName=field_defs(i)%shortname)) then
@@ -1733,5 +1928,107 @@ module cice_cap_mod
     
   end subroutine
 
+#ifdef CMEPS
+  subroutine State_SetScalar(scalar_value, scalar_id, State, flds_scalar_name, flds_scalar_num,  rc)
+
+    ! ----------------------------------------------
+    ! Set scalar data from State for a particular name
+    ! ----------------------------------------------
+
+    ! input/output arguments
+    real(ESMF_KIND_R8), intent(in)     :: scalar_value
+    integer,            intent(in)     :: scalar_id
+    type(ESMF_State),   intent(inout)  :: State
+    character(len=*),   intent(in)     :: flds_scalar_name
+    integer,            intent(in)     :: flds_scalar_num
+    integer,            intent(inout)  :: rc
+
+    ! local variables
+    integer           :: mytask
+    type(ESMF_Field)  :: lfield
+    type(ESMF_VM)     :: vm
+    real(ESMF_KIND_R8), pointer :: farrayptr(:,:)
+    character(len=*), parameter :: subname='(state_setscalar)'
+    ! ----------------------------------------------
+
+    rc = ESMF_SUCCESS
+
+    call ESMF_VMGetCurrent(vm, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+
+    call ESMF_VMGet(vm, localPet=mytask, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+
+    call ESMF_StateGet(State, itemName=trim(flds_scalar_name), field=lfield, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+
+    if (mytask == 0) then
+       call ESMF_FieldGet(lfield, farrayPtr = farrayptr, rc=rc)
+       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+         line=__LINE__, &
+         file=__FILE__)) &
+         return  ! bail out
+       if (scalar_id < 0 .or. scalar_id > flds_scalar_num) then
+          call ESMF_LogWrite(trim(subname)//": ERROR in scalar_id", ESMF_LOGMSG_INFO)
+          rc = ESMF_FAILURE
+          return
+       endif
+       farrayptr(scalar_id,1) = scalar_value
+    endif
+
+  end subroutine State_SetScalar
+
+  subroutine SetScalarField(field, flds_scalar_name, flds_scalar_num, rc)
+    ! ----------------------------------------------
+    ! create a field with scalar data on the root pe
+    ! ----------------------------------------------
+    use ESMF, only : ESMF_Field, ESMF_DistGrid, ESMF_Grid
+    use ESMF, only : ESMF_DistGridCreate, ESMF_GridCreate, ESMF_LogFoundError, ESMF_LOGERR_PASSTHRU
+    use ESMF, only : ESMF_FieldCreate, ESMF_GridCreate, ESMF_TYPEKIND_R8
+
+    type(ESMF_Field) , intent(inout) :: field
+    character(len=*) , intent(in)    :: flds_scalar_name
+    integer          , intent(in)    :: flds_scalar_num
+    integer          , intent(inout) :: rc
+
+    ! local variables
+    type(ESMF_Distgrid) :: distgrid
+    type(ESMF_Grid)     :: grid
+    character(len=*), parameter :: subname='(ice_import_export:SetScalarField)'
+    ! ----------------------------------------------
+
+    rc = ESMF_SUCCESS
+
+    ! create a DistGrid with a single index space element, which gets mapped onto DE 0.
+    distgrid = ESMF_DistGridCreate(minIndex=(/1/), maxIndex=(/1/), rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+
+    grid = ESMF_GridCreate(distgrid, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+
+    field = ESMF_FieldCreate(name=trim(flds_scalar_name), grid=grid, typekind=ESMF_TYPEKIND_R8, &
+         ungriddedLBound=(/1/), ungriddedUBound=(/flds_scalar_num/), gridToFieldMap=(/2/), rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+
+    end subroutine SetScalarField
+#endif
   !-----------------------------------------------------------------------------
 end module cice_cap_mod
