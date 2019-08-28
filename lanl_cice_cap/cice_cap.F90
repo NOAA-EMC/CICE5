@@ -272,7 +272,7 @@ module cice_cap_mod
       return  ! bail out
 
     call CICE_Initialize(mpi_comm)
-
+    
 #ifdef CMEPS
     call NUOPC_CompAttributeGet(gcomp, name="ScalarFieldName", value=cvalue, isPresent=isPresent, isSet=isSet, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
@@ -690,6 +690,8 @@ module cice_cap_mod
 #endif
 
 #ifdef CMEPS
+    call ice_export(exportState)
+
     call State_SetScalar(dble(nx_global), flds_scalar_index_nx, exportState, &
          flds_scalar_name, flds_scalar_num, rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
@@ -1383,6 +1385,190 @@ module cice_cap_mod
    if(profile_memory) call ESMF_VMLogMemInfo("Leaving CICE Model_ADVANCE: ")
 
   end subroutine ModelAdvance_slow 
+
+
+#ifdef CMEPS
+  subroutine ice_export(exportState)
+    type(ESMF_State) :: exportState
+
+    ! local variables
+    integer :: rc
+    type(block)                            :: this_block
+    character(len=64)                      :: fldname
+    integer                                :: i,j,iblk,n,i1,i2,j1,j2
+    integer                                :: ilo,ihi,jlo,jhi
+    real(ESMF_KIND_R8)                     :: ue, vn, ui, vj
+   
+    real(ESMF_KIND_R8), pointer :: dataPtr_mask(:,:)
+    real(ESMF_KIND_R8), pointer :: dataPtr_ifrac(:,:)
+    real(ESMF_KIND_R8), pointer :: dataPtr_itemp(:,:)
+    real(ESMF_KIND_R8), pointer :: dataPtr_alvdr(:,:)
+    real(ESMF_KIND_R8), pointer :: dataPtr_alidr(:,:)
+    real(ESMF_KIND_R8), pointer :: dataPtr_alvdf(:,:)
+    real(ESMF_KIND_R8), pointer :: dataPtr_alidf(:,:)
+    real(ESMF_KIND_R8), pointer :: dataPtr_strairxT(:,:)
+    real(ESMF_KIND_R8), pointer :: dataPtr_strairyT(:,:)
+    real(ESMF_KIND_R8), pointer :: dataPtr_strocnxT(:,:)
+    real(ESMF_KIND_R8), pointer :: dataPtr_strocnyT(:,:)
+    real(ESMF_KIND_R8), pointer :: dataPtr_fswthru(:,:)
+    real(ESMF_KIND_R8), pointer :: dataPtr_fswthruvdr(:,:)
+    real(ESMF_KIND_R8), pointer :: dataPtr_fswthruvdf(:,:)
+    real(ESMF_KIND_R8), pointer :: dataPtr_fswthruidr(:,:)
+    real(ESMF_KIND_R8), pointer :: dataPtr_fswthruidf(:,:)
+    real(ESMF_KIND_R8), pointer :: dataPtr_flwout(:,:)
+    real(ESMF_KIND_R8), pointer :: dataPtr_fsens(:,:)
+    real(ESMF_KIND_R8), pointer :: dataPtr_flat(:,:)
+    real(ESMF_KIND_R8), pointer :: dataPtr_evap(:,:)
+    real(ESMF_KIND_R8), pointer :: dataPtr_fhocn(:,:)
+    real(ESMF_KIND_R8), pointer :: dataPtr_fresh(:,:)
+    real(ESMF_KIND_R8), pointer :: dataPtr_fsalt(:,:)
+    real(ESMF_KIND_R8), pointer :: dataPtr_vice(:,:)
+    real(ESMF_KIND_R8), pointer :: dataPtr_vsno(:,:)
+
+    call State_getFldPtr(exportState,'ice_mask',dataPtr_mask,rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) return
+    call State_getFldPtr(exportState,'ice_fraction',dataPtr_ifrac,rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) return
+#ifdef CMEPS
+    call State_getFldPtr(exportState,'sea_ice_temperature',dataPtr_itemp,rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) return
+#else
+    call State_getFldPtr(exportState,'sea_ice_surface_temperature',dataPtr_itemp,rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) return
+#endif
+    call State_getFldPtr(exportState,'inst_ice_vis_dir_albedo',dataPtr_alvdr,rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) return
+    call State_getFldPtr(exportState,'inst_ice_vis_dif_albedo',dataPtr_alvdf,rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) return
+    call State_getFldPtr(exportState,'inst_ice_ir_dir_albedo',dataPtr_alidr,rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) return
+    call State_getFldPtr(exportState,'inst_ice_ir_dif_albedo',dataPtr_alidf,rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) return
+    call State_getFldPtr(exportState,'stress_on_air_ice_zonal',dataPtr_strairxT,rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) return
+    call State_getFldPtr(exportState,'stress_on_air_ice_merid',dataPtr_strairyT,rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) return
+    call State_getFldPtr(exportState,'stress_on_ocn_ice_zonal',dataPtr_strocnxT,rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) return
+    call State_getFldPtr(exportState,'stress_on_ocn_ice_merid',dataPtr_strocnyT,rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) return
+    call State_getFldPtr(exportState,'net_heat_flx_to_ocn',dataPtr_fhocn,rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) return
+    call State_getFldPtr(exportState,'mean_fresh_water_to_ocean_rate',dataPtr_fresh,rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) return
+    call State_getFldPtr(exportState,'mean_salt_rate',dataPtr_fsalt,rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) return
+    call State_getFldPtr(exportState,'mean_ice_volume',dataPtr_vice,rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) return
+    call State_getFldPtr(exportState,'mean_snow_volume',dataPtr_vsno,rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) return
+    call State_getFldPtr(exportState,'mean_sw_pen_to_ocn',dataPtr_fswthru,rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) return
+    call State_getFldPtr(exportState,'mean_net_sw_vis_dir_flx',dataPtr_fswthruvdr,rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) return
+    call State_getFldPtr(exportState,'mean_net_sw_vis_dif_flx',dataPtr_fswthruvdf,rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) return
+    call State_getFldPtr(exportState,'mean_net_sw_ir_dir_flx',dataPtr_fswthruidr,rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) return
+    call State_getFldPtr(exportState,'mean_net_sw_ir_dif_flx',dataPtr_fswthruidf,rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) return
+    call State_getFldPtr(exportState,'mean_up_lw_flx_ice',dataPtr_flwout,rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) return
+    call State_getFldPtr(exportState,'mean_sensi_heat_flx_atm_into_ice',dataPtr_fsens,rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) return
+    call State_getFldPtr(exportState,'mean_laten_heat_flx_atm_into_ice',dataPtr_flat,rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) return
+    call State_getFldPtr(exportState,'mean_evap_rate_atm_into_ice',dataPtr_evap,rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) return
+
+    dataPtr_ifrac = 0._ESMF_KIND_R8
+    dataPtr_itemp = 0._ESMF_KIND_R8
+    dataPtr_mask = 0._ESMF_KIND_R8
+    do iblk = 1,nblocks
+       this_block = get_block(blocks_ice(iblk),iblk)
+       ilo = this_block%ilo
+       ihi = this_block%ihi
+       jlo = this_block%jlo
+       jhi = this_block%jhi
+
+       do j = jlo,jhi
+       do i = ilo,ihi
+          i1 = i - ilo + 1
+          j1 = j - jlo + 1
+#ifdef CMEPS
+          if (hm(i,j,iblk) > 0.5) dataPtr_mask(i1,j1) = 1._ESMF_KIND_R8
+          dataPtr_ifrac   (i1,j1) = aice(i,j,iblk)   ! ice fraction (0-1)
+          if (dataPtr_ifrac(i1,j1) > 0._ESMF_KIND_R8) &
+             dataPtr_itemp   (i1,j1) = Tffresh + trcr(i,j,1,iblk)  ! surface temperature of ice covered portion (degK)
+          dataPtr_alvdr   (i1,j1) = alvdr(i,j,iblk)  ! albedo vis dir
+          dataPtr_alidr   (i1,j1) = alidr(i,j,iblk)  ! albedo nir dir
+          dataPtr_alvdf   (i1,j1) = alvdf(i,j,iblk)  ! albedo vis dif
+          dataPtr_alidf   (i1,j1) = alidf(i,j,iblk)  ! albedo nir dif
+          dataPtr_fswthru (i1,j1) = fswthru(i,j,iblk) ! flux of shortwave through ice to ocean
+          dataPtr_fswthruvdr (i1,j1) = fswthruvdr(i,j,iblk) ! flux of vis dir shortwave through ice to ocean
+          dataPtr_fswthruvdf (i1,j1) = fswthruvdf(i,j,iblk) ! flux of vis dif shortwave through ice to ocean
+          dataPtr_fswthruidr (i1,j1) = fswthruidr(i,j,iblk) ! flux of ir dir shortwave through ice to ocean
+          dataPtr_fswthruidf (i1,j1) = fswthruidf(i,j,iblk) ! flux of ir dif shortwave through ice to ocean
+          dataPtr_flwout  (i1,j1) = flwout(i,j,iblk)   ! longwave outgoing (upward), average over ice fraction only
+          dataPtr_fsens   (i1,j1) =  fsens(i,j,iblk)   ! sensible
+          dataPtr_flat    (i1,j1) =   flat(i,j,iblk)   ! latent
+          dataPtr_evap    (i1,j1) =   evap(i,j,iblk)   ! evaporation (not ~latent, need separate field)
+          dataPtr_fhocn   (i1,j1) =  fhocn(i,j,iblk)   ! heat exchange with ocean 
+          dataPtr_fresh   (i1,j1) =  fresh(i,j,iblk)   ! fresh water to ocean
+          dataPtr_fsalt   (i1,j1) =  fsalt(i,j,iblk)   ! salt to ocean
+          dataPtr_vice    (i1,j1) =   vice(i,j,iblk)   ! sea ice volume
+          dataPtr_vsno    (i1,j1) =   vsno(i,j,iblk)   ! snow volume
+          ! --- rotate these vectors from i/j to east/north ---
+          ui = strairxT(i,j,iblk)
+          vj = strairyT(i,j,iblk)
+          dataPtr_strairxT(i1,j1) = ui*cos(ANGLET(i,j,iblk)) - vj*sin(ANGLET(i,j,iblk))  ! air ice stress
+          dataPtr_strairyT(i1,j1) = ui*sin(ANGLET(i,j,iblk)) + vj*cos(ANGLET(i,j,iblk))  ! air ice stress
+          ui = -strocnxT(i,j,iblk)
+          vj = -strocnyT(i,j,iblk)
+          dataPtr_strocnxT(i1,j1) = ui*cos(ANGLET(i,j,iblk)) - vj*sin(ANGLET(i,j,iblk))  ! ice ocean stress
+          dataPtr_strocnyT(i1,j1) = ui*sin(ANGLET(i,j,iblk)) + vj*cos(ANGLET(i,j,iblk))  ! ice ocean stress
+#else
+          if (hm(i,j,iblk) > 0.5) dataPtr_mask(i1,j1,iblk) = 1._ESMF_KIND_R8
+          dataPtr_ifrac   (i1,j1,iblk) = aice(i,j,iblk)   ! ice fraction (0-1)
+          if (dataPtr_ifrac(i1,j1,iblk) > 0._ESMF_KIND_R8) &
+             dataPtr_itemp   (i1,j1,iblk) = Tffresh + trcr(i,j,1,iblk)  ! surface temperature of ice covered portion (degK)
+          dataPtr_alvdr   (i1,j1,iblk) = alvdr(i,j,iblk)  ! albedo vis dir
+          dataPtr_alidr   (i1,j1,iblk) = alidr(i,j,iblk)  ! albedo nir dir
+          dataPtr_alvdf   (i1,j1,iblk) = alvdf(i,j,iblk)  ! albedo vis dif
+          dataPtr_alidf   (i1,j1,iblk) = alidf(i,j,iblk)  ! albedo nir dif
+          dataPtr_fswthru (i1,j1,iblk) = fswthru(i,j,iblk) ! flux of shortwave through ice to ocean
+          dataPtr_fswthruvdr (i1,j1,iblk) = fswthruvdr(i,j,iblk) ! flux of vis dir shortwave through ice to ocean
+          dataPtr_fswthruvdf (i1,j1,iblk) = fswthruvdf(i,j,iblk) ! flux of vis dif shortwave through ice to ocean
+          dataPtr_fswthruidr (i1,j1,iblk) = fswthruidr(i,j,iblk) ! flux of ir dir shortwave through ice to ocean
+          dataPtr_fswthruidf (i1,j1,iblk) = fswthruidf(i,j,iblk) ! flux of ir dif shortwave through ice to ocean
+          dataPtr_flwout  (i1,j1,iblk) = flwout(i,j,iblk)   ! longwave outgoing (upward), average over ice fraction only
+          dataPtr_fsens   (i1,j1,iblk) =  fsens(i,j,iblk)   ! sensible
+          dataPtr_flat    (i1,j1,iblk) =   flat(i,j,iblk)   ! latent
+          dataPtr_evap    (i1,j1,iblk) =   evap(i,j,iblk)   ! evaporation (not ~latent, need separate field)
+          dataPtr_fhocn   (i1,j1,iblk) =  fhocn(i,j,iblk)   ! heat exchange with ocean 
+          dataPtr_fresh   (i1,j1,iblk) =  fresh(i,j,iblk)   ! fresh water to ocean
+          dataPtr_fsalt   (i1,j1,iblk) =  fsalt(i,j,iblk)   ! salt to ocean
+          dataPtr_vice    (i1,j1,iblk) =   vice(i,j,iblk)   ! sea ice volume
+          dataPtr_vsno    (i1,j1,iblk) =   vsno(i,j,iblk)   ! snow volume
+          ! --- rotate these vectors from i/j to east/north ---
+          ui = strairxT(i,j,iblk)
+          vj = strairyT(i,j,iblk)
+          dataPtr_strairxT(i1,j1,iblk) = ui*cos(ANGLET(i,j,iblk)) - vj*sin(ANGLET(i,j,iblk))  ! air ice stress
+          dataPtr_strairyT(i1,j1,iblk) = ui*sin(ANGLET(i,j,iblk)) + vj*cos(ANGLET(i,j,iblk))  ! air ice stress
+          ui = -strocnxT(i,j,iblk)
+          vj = -strocnyT(i,j,iblk)
+          dataPtr_strocnxT(i1,j1,iblk) = ui*cos(ANGLET(i,j,iblk)) - vj*sin(ANGLET(i,j,iblk))  ! ice ocean stress
+          dataPtr_strocnyT(i1,j1,iblk) = ui*sin(ANGLET(i,j,iblk)) + vj*cos(ANGLET(i,j,iblk))  ! ice ocean stress
+#endif
+       enddo
+       enddo
+    enddo
+
+    !-------------------------------------------------
+  end subroutine ice_export
+#endif
+
+
 
   subroutine cice_model_finalize(gcomp, rc)
 
