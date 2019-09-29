@@ -1977,11 +1977,7 @@ module cice_cap_mod
 
 !--------- export fields from Sea Ice -------------
 
-#ifdef CMEPS
-    call fld_list_add(fldsFrIce_num, fldsFrIce, "sea_ice_temperature"             , "will provide")
-#else
     call fld_list_add(fldsFrIce_num, fldsFrIce, "sea_ice_surface_temperature"     , "will provide")
-#endif
     call fld_list_add(fldsFrIce_num, fldsFrIce, "inst_ice_vis_dir_albedo"         , "will provide")
     call fld_list_add(fldsFrIce_num, fldsFrIce, "inst_ice_ir_dir_albedo"          , "will provide")
     call fld_list_add(fldsFrIce_num, fldsFrIce, "inst_ice_vis_dif_albedo"         , "will provide")
