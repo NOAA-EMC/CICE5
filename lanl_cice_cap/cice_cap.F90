@@ -210,7 +210,7 @@ module cice_cap_mod
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
-    overwrite_timeslice=(trim(value)=="true")
+    overwrite_timeslice=(trim(value)/="false")
     write(msgString,'(A,l6)')'CICE_CAP: Overwrite_timeslice = ',overwrite_timeslice
     call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO, rc=rc)
 
