@@ -87,6 +87,7 @@ module cice_cap_mod
 
   type(ESMF_Grid), save :: ice_grid_i
   logical :: write_diagnostics = .false.
+  logical :: overwrite_timeslice = .false.
   logical :: profile_memory = .false.
   logical :: grid_attach_area = .false.
   ! local helper flag for halo debugging
@@ -214,6 +215,16 @@ module cice_cap_mod
       return  ! bail out
     write_diagnostics=(trim(value)=="true")
     write(msgString,'(A,l6)')'CICE_CAP: Dumpfields = ',write_diagnostics
+    call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO, rc=rc)
+
+    call ESMF_AttributeGet(gcomp, name="OverwriteSlice", value=value, defaultValue="true", &
+      convention="NUOPC", purpose="Instance", rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+    overwrite_timeslice=(trim(value)/="false")
+    write(msgString,'(A,l6)')'CICE_CAP: OverwriteSlice = ',overwrite_timeslice
     call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO, rc=rc)
 
     call ESMF_AttributeGet(gcomp, name="ProfileMemory", value=value, defaultValue="true", &
@@ -966,7 +977,7 @@ module cice_cap_mod
 
 #ifdef CMEPS
         call ESMF_FieldWrite(lfield, fileName='field_ice_import_'//trim(fldname)//'.nc', &
-          timeslice=import_slice, overwrite=.true., rc=rc)
+          timeslice=import_slice, overwrite=overwrite_timeslice, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
           line=__LINE__, &
           file=__FILE__)) &
@@ -988,7 +999,7 @@ module cice_cap_mod
         fldptr2d(:,:) = fldptr(:,:,1)
 
         call ESMF_FieldWrite(lfield2d, fileName='field_ice_import_'//trim(fldname)//'.nc', &
-          timeslice=import_slice, rc=rc) 
+          timeslice=import_slice, overwrite=overwrite_timeslice, rc=rc) 
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
           line=__LINE__, &
           file=__FILE__)) &
@@ -1316,7 +1327,7 @@ module cice_cap_mod
 
 #ifdef CMEPS
         call ESMF_FieldWrite(lfield, fileName='field_ice_export_'//trim(fldname)//'.nc', &
-          timeslice=export_slice, overwrite=.true., rc=rc)
+          timeslice=export_slice, overwrite=overwrite_timeslice, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
           line=__LINE__, &
           file=__FILE__)) &
@@ -1338,7 +1349,7 @@ module cice_cap_mod
         fldptr2d(:,:) = fldptr(:,:,1)
 
         call ESMF_FieldWrite(lfield2d, fileName='field_ice_export_'//trim(fldname)//'.nc', &
-          timeslice=export_slice, rc=rc) 
+          timeslice=export_slice, overwrite=overwrite_timeslice,rc=rc) 
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
           line=__LINE__, &
           file=__FILE__)) &
@@ -2087,14 +2098,14 @@ module cice_cap_mod
 
 #ifdef CMEPS
     call ESMF_FieldWrite(field, fileName='field_ice_internal_'//trim(stdname)//'.nc', &
-      timeslice=slice, overwrite=.true., rc=rc)
+      timeslice=slice, overwrite=overwrite_timeslice, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
 #else
     call ESMF_FieldWrite(field, fileName='field_ice_internal_'//trim(stdname)//'.nc', &
-      timeslice=slice, rc=rc) 
+      timeslice=slice, overwrite=overwrite_timeslice, rc=rc) 
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
