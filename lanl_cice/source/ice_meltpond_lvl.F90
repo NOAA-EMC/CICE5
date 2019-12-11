@@ -240,6 +240,7 @@
                ! trim(frzpnd) == 'hlid' Stefan approximation
                ! assumes pond is fresh (freezing temperature = 0 C)
                ! and ice grows from existing pond ice
+               dhlid = c0
                hlid = ipnd(i,j)
                if (dvn == c0) then ! freeze pond
                   Ts = Tair(i,j) - Tffresh

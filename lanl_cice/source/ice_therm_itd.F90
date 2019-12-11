@@ -469,6 +469,12 @@
          endif
       enddo
 
+      if(iflag .eq. 0)then
+      allocate(g0(1,ncat))
+      allocate(g1(1,ncat))
+      allocate(hL(1,ncat))
+      allocate(hR(1,ncat))
+     else
       allocate(g0(iflag,ncat))
       allocate(g1(iflag,ncat))
       allocate(hL(iflag,ncat))
@@ -646,6 +652,9 @@
          enddo                  ! ij
       enddo                     ! boundaries, 1 to ncat-1
 
+      ! iflag =/0
+      end if
+
       deallocate(g0)
       deallocate(g1)
       deallocate(hL)
@@ -666,6 +675,7 @@
          enddo
       enddo
 
+      if(iflag > 0)then
       call shift_ice (nx_block, ny_block,    &
                       indxi,    indxj,       &
                       icells,                &
@@ -676,7 +686,7 @@
                       daice,    dvice,       &
                       l_stop,                &
                       istop,    jstop)
-
+      end if
 
       ! maintain qsno negative definiteness
       do n = 1, ncat
