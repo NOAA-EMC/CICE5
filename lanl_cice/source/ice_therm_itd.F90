@@ -346,7 +346,8 @@
             j = indxj(ij)
 
             if (hicen_init(ij,n)   > puny .and. &
-                hicen_init(ij,n+1) > puny) then
+                hicen_init(ij,n+1) > puny .and. &
+                hicen_init(ij,n+1) - hicen_init(ij,n) > puny) then
                  ! interpolate between adjacent category growth rates
                slope = (dhicen(ij,n+1) - dhicen(ij,n)) / &
                        (hicen_init(ij,n+1) - hicen_init(ij,n))
