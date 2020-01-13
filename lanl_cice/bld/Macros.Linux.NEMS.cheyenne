@@ -4,7 +4,7 @@
 # For use with intel compiler with MPT 
 #==============================================================================
 
-DEBUG =Y 
+DEBUG =
 
 CPP        := fpp
 CPPDEFS    := -DFORTRANUNDERSCORE -DNO_R16 -DHAVE_F2008_CONTIGUOUS -DLINUX -DCPRINTEL -DCICE_NEMS
