@@ -189,7 +189,12 @@
           restart_pond_topo, read_restart_pond_topo
       use ice_restart_shared, only: runtype, restart
       use ice_restart_driver, only: restartfile, restartfile_v4
-      use ice_state ! almost everything
+      use ice_state, only: aicen, vicen, vsnon, aice, trcr, &
+          vice, vsno, aice0, tr_iage, trcrn, trcr_depend, &
+          tr_brine, tr_aero, tr_pond_topo, tr_pond_lvl, tr_pond_cesm, &
+          tr_lvl, nt_alvl, nt_vlvl, tr_fy, nt_iage, nt_fy, &
+          nt_hpnd, nt_apnd, nt_ipnd 
+
       use ice_zbgc, only: init_bgc
       use ice_zbgc_shared, only: skl_bgc
 
