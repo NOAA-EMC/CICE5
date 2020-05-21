@@ -1060,9 +1060,13 @@ module cice_cap_mod
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) return
     call State_getFldPtr(importState,'inst_height_lowest',dataPtr_zlvl,rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) return
-    call State_getFldPtr(importState,'air_density_height_lowest',dataPtr_rhoabot,rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) return
+    ! for CMEPS, the air density is no longer sent from the mediator. For NEMS, this field can still
+    ! be advertised and sent (so that no changes are required to NEMS), but this field is now calculated 
+    ! below with a calculation of air density equivalent to the mediator calculation
+    !call State_getFldPtr(importState,'air_density_height_lowest',dataPtr_rhoabot,rc=rc)
+    !if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) return
 
+       rhoa = 0.0_ESMF_KIND_R8
        potT = 0.0_ESMF_KIND_R8
     do iblk = 1,nblocks
        this_block = get_block(blocks_ice(iblk),iblk)
@@ -1077,7 +1081,9 @@ module cice_cap_mod
           i1 = i - ilo + 1
           j1 = j - jlo + 1
 #ifdef CMEPS
-          rhoa   (i,j,iblk) = dataPtr_rhoabot(i1,j1)  ! import directly from mediator  
+          if (dataPtr_Tbot(i1,j1) /= 0._ESMF_KIND_R8) rhoa(i,j,iblk) = dataPtr_pbot(i1,j1)/&
+             (287.058_ESMF_KIND_R8*(1._ESMF_KIND_R8+0.608_ESMF_KIND_R8*dataPtr_qbot(i1,j1))*dataPtr_Tbot(i1,j1))
+          !rhoa   (i,j,iblk) = dataPtr_rhoabot(i1,j1)  ! import directly from mediator  
           if(dataPtr_pbot(i1,j1) .gt. 0.0_ESMF_KIND_R8) &
           potT   (i,j,iblk) = dataPtr_Tbot   (i1,j1) * (100000._ESMF_KIND_R8/dataPtr_pbot(i1,j1))**0.286_ESMF_KIND_R8 ! Potential temperature (K)
           Tair   (i,j,iblk) = dataPtr_Tbot   (i1,j1)  ! near surface temp, maybe lowest level (K)
@@ -1102,7 +1108,9 @@ module cice_cap_mod
           ss_tltx(i,j,iblk) = dataPtr_sssz   (i1,j1)
           ss_tlty(i,j,iblk) = dataPtr_sssm   (i1,j1)
 #else
-          rhoa   (i,j,iblk) = dataPtr_rhoabot(i1,j1,iblk)  ! import directly from mediator  
+          if (dataPtr_Tbot(i1,j1,iblk) /= 0._ESMF_KIND_R8) rhoa(i,j,iblk) = dataPtr_pbot(i1,j1,iblk)/&
+             (287.058_ESMF_KIND_R8*(1._ESMF_KIND_R8+0.608_ESMF_KIND_R8*dataPtr_qbot(i1,j1,iblk))*dataPtr_Tbot(i1,j1,iblk))
+          !rhoa   (i,j,iblk) = dataPtr_rhoabot(i1,j1,iblk)  ! import directly from mediator  
           if(dataPtr_pbot(i1,j1,iblk) .gt. 0.0_ESMF_KIND_R8) &
           potT   (i,j,iblk) = dataPtr_Tbot   (i1,j1,iblk) * (100000._ESMF_KIND_R8/dataPtr_pbot(i1,j1,iblk))**0.286_ESMF_KIND_R8 ! Potential temperature (K)
           Tair   (i,j,iblk) = dataPtr_Tbot   (i1,j1,iblk)  ! near surface temp, maybe lowest level (K)
@@ -1378,6 +1386,7 @@ module cice_cap_mod
 ! This will help to determine roughly which fields can be hooked into cice
 
    !import_slice = import_slice + 1
+   !call dumpCICEInternal(ice_grid_i, import_slice, "air_density_height_lowest", "will provide", rhoa)
    !call dumpCICEInternal(ice_grid_i, import_slice, "inst_zonal_wind_height10m", "will provide", strax)
    !call dumpCICEInternal(ice_grid_i, import_slice, "inst_merid_wind_height10m", "will provide", stray)
    !call dumpCICEInternal(ice_grid_i, import_slice, "inst_pres_height_surface" , "will provide", zlvl)
